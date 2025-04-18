@@ -7,7 +7,6 @@ include(FetchContent)
 # Fetch and Build "luamake"
 ###############################################################################
 
-# Download the luamake repository.
 FetchContent_Declare(
   luamake
   GIT_REPOSITORY https://github.com/actboy168/luamake.git
@@ -15,7 +14,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(luamake)
 
-# Build luamake using the provided script.
 add_custom_target(build_luamake
   COMMAND ${CMAKE_COMMAND} -E echo "Building luamake..."
   COMMAND ${CMAKE_COMMAND} -E chdir ${luamake_SOURCE_DIR} bash compile/build.sh
@@ -24,15 +22,12 @@ add_custom_target(build_luamake
   VERBATIM
 )
 
-# Define the location of the built luamake executable.
 set(LUAMAKE_EXECUTABLE "${luamake_SOURCE_DIR}/luamake")
-
 
 ###############################################################################
 # Fetch and Build "lua-debug"
 ###############################################################################
 
-# Download the lua-debug repository.
 FetchContent_Declare(
   lua_debug
   GIT_REPOSITORY https://github.com/actboy168/lua-debug.git
@@ -40,7 +35,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(lua_debug)
 
-# Build lua-debug with its custom steps.
 add_custom_target(build_lua_debug
   COMMAND ${CMAKE_COMMAND} -E echo "Initializing lua-debug submodules..."
   COMMAND ${CMAKE_COMMAND} -E chdir ${lua_debug_SOURCE_DIR} git submodule init
@@ -62,9 +56,8 @@ add_custom_target(build_lua_debug
 # Set LUADEBUG_ROOT to be a directory under the build folder.
 set(LUADEBUG_ROOT "${CMAKE_BINARY_DIR}/luadebug")
 
-# Create a custom target that copies the entire publish folder from the lua-debug
-# source location into ${LUADEBUG_ROOT}. This prevents the output from remaining
-# in the source tree.
+# Create a custom target that copies the entire publish folder from lua-debug's source
+# into ${LUADEBUG_ROOT}.
 add_custom_target(copy_luadebug_publish ALL
   COMMAND ${CMAKE_COMMAND} -E remove_directory ${LUADEBUG_ROOT}
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${lua_debug_SOURCE_DIR}/publish ${LUADEBUG_ROOT}
@@ -73,22 +66,18 @@ add_custom_target(copy_luadebug_publish ALL
 )
 
 ###############################################################################
-# Set Variables Based on the New LUADEBUG_ROOT
+# Define Variables Based on LUADEBUG_ROOT
 ###############################################################################
 
-# Define a variable for each lua architecture version. These are computed
-# relative to the new LUADEBUG_ROOT folder. Adjust the subfolder names if they
-# differ from your actual build output.
+# Define the path variables relative to LUADEBUG_ROOT.
 set(LUADEBUG_51_SO  "${LUADEBUG_ROOT}/runtime/linux-x64/lua51/luadebug.so")
 set(LUADEBUG_52_SO  "${LUADEBUG_ROOT}/runtime/linux-x64/lua52/luadebug.so")
 set(LUADEBUG_53_SO  "${LUADEBUG_ROOT}/runtime/linux-x64/lua53/luadebug.so")
 set(LUADEBUG_54_SO  "${LUADEBUG_ROOT}/runtime/linux-x64/lua54/luadebug.so")
 set(LUADEBUG_JIT_SO "${LUADEBUG_ROOT}/runtime/linux-x64/luajit/luadebug.so")
 
-# Define LUADEBUG_SCRIPT as a subdirectory where additional lua scripts may reside.
 set(LUADEBUG_SCRIPT "${LUADEBUG_ROOT}/script")
 
-# Optionally, print the variables for confirmation.
 message(STATUS "LUADEBUG_ROOT: ${LUADEBUG_ROOT}")
 message(STATUS "LUADEBUG_51_SO: ${LUADEBUG_51_SO}")
 message(STATUS "LUADEBUG_52_SO: ${LUADEBUG_52_SO}")
@@ -98,10 +87,34 @@ message(STATUS "LUADEBUG_JIT_SO: ${LUADEBUG_JIT_SO}")
 message(STATUS "LUADEBUG_SCRIPT: ${LUADEBUG_SCRIPT}")
 
 ###############################################################################
+# Create Imported Targets for the Shared Libraries
+###############################################################################
+
+# Create an imported target for LuaJIT.
+add_library(luadebug_jit SHARED IMPORTED GLOBAL)
+set_target_properties(luadebug_jit PROPERTIES
+  IMPORTED_LOCATION "${LUADEBUG_JIT_SO}"
+  # Optionally, you can define other properties such as INTERFACE_INCLUDE_DIRECTORIES if needed.
+)
+
+# Similarly, if your consumers might need the other versions, you can create imported targets:
+add_library(luadebug_51 SHARED IMPORTED GLOBAL)
+set_target_properties(luadebug_51 PROPERTIES IMPORTED_LOCATION "${LUADEBUG_51_SO}")
+
+add_library(luadebug_52 SHARED IMPORTED GLOBAL)
+set_target_properties(luadebug_52 PROPERTIES IMPORTED_LOCATION "${LUADEBUG_52_SO}")
+
+add_library(luadebug_53 SHARED IMPORTED GLOBAL)
+set_target_properties(luadebug_53 PROPERTIES IMPORTED_LOCATION "${LUADEBUG_53_SO}")
+
+add_library(luadebug_54 SHARED IMPORTED GLOBAL)
+set_target_properties(luadebug_54 PROPERTIES IMPORTED_LOCATION "${LUADEBUG_54_SO}")
+
+###############################################################################
 # Overall Wrapper Target
 ###############################################################################
 
-# Create a target that depends on building both dependencies and the copying step.
+# This target ensures all steps are executed.
 add_custom_target(all_lua_debug_build ALL
   DEPENDS build_luamake build_lua_debug copy_luadebug_publish
   COMMENT "Building all components for lua-debug wrapper"

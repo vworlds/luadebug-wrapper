@@ -59,6 +59,12 @@ set(LUADEBUG_ROOT "${CMAKE_BINARY_DIR}/luadebug")
 # Create a custom target that copies the entire publish folder from lua-debug's source
 # into ${LUADEBUG_ROOT}.
 add_custom_target(copy_luadebug_publish ALL
+  BYPRODUCTS
+    ${LUADEBUG_51_SO}
+    ${LUADEBUG_52_SO}
+    ${LUADEBUG_53_SO}
+    ${LUADEBUG_54_SO}
+    ${LUADEBUG_JIT_SO}
   COMMAND ${CMAKE_COMMAND} -E remove_directory ${LUADEBUG_ROOT}
   COMMAND ${CMAKE_COMMAND} -E copy_directory ${lua_debug_SOURCE_DIR}/publish ${LUADEBUG_ROOT}
   DEPENDS build_lua_debug
